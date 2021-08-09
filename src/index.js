@@ -15,7 +15,6 @@ const insertData = async (data) => {
     "select count(*) c from article where raw_id = ?",
     [raw_id]
   );
-  const keys = Object.keys(data);
   if (!raw_id) {
     notice({
       data,
@@ -37,8 +36,8 @@ const insertData = async (data) => {
 
 const parseDetail = async (listItem) => {
   const { data: listData, uri } = listItem;
-  log(chalk.underline(uri));
   const $ = await get$(uri);
+  log(chalk.underline(uri));
   let title = $(".entry-title").text();
   let rating_count = $(".post-ratings strong")
     .eq(0)
@@ -54,6 +53,13 @@ const parseDetail = async (listItem) => {
     uid: uids.join("|"),
     ...listData,
   };
+  if (uids.length === 0) {
+    notice({
+      data,
+      err: new Error("skip data miss uids"),
+    });
+    return;
+  }
   try {
     await insertData(data);
   } catch (err) {
@@ -61,8 +67,8 @@ const parseDetail = async (listItem) => {
   }
 };
 const parseList = async (link) => {
-  log(chalk.underline(link));
   const $ = await get$(link);
+  log(chalk.underline(link));
   let hrefs = [];
   $("article.post").each(function (i, el) {
     let timestr = $(el).find(".entry-header time").attr("datetime");
@@ -77,7 +83,7 @@ const parseList = async (link) => {
         let tag = $(this).text();
         tags.push(tag);
       });
-    const raw_id = parseURL(href).path.pop().replace('.html', '');
+    const raw_id = parseURL(href).path.pop().replace(".html", "");
     let data = {
       raw_id,
       time,
@@ -110,13 +116,11 @@ const start = async () => {
     console.log(chalk.cyan(`start fetching from ${startPage} to ${endPage}`));
     fs.writeFileSync(config.CRAW_ERROR_LOG_PATH, "craw error log \n\n");
 
-    for (const link of links) {
+    // 发送全部请求，任何一个请求成功马上处理
+    for await (const hrefs of links.map(parseList)) {
       try {
-        const hrefs = await parseList(link);
         // fetch detail
-        for (let href of hrefs) {
-          await parseDetail(href);
-        }
+        await Promise.allSettled(hrefs.map(parseDetail));
       } catch (error) {
         notice(error.message);
       }
