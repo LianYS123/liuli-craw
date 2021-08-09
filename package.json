@@ -1,0 +1,33 @@
+{
+  "name": "liuli-craw",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/craw-liuli.umd.js",
+  "module": "./dist/craw-liuli.module.js",
+  "exports": "./dist/cral-liuli.modern.js",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "build": "microbundle src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LianYS123/liuli-craw.git"
+  },
+  "author": "lian",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LianYS123/liuli-craw/issues"
+  },
+  "homepage": "https://github.com/LianYS123/liuli-craw#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cheerio": "^1.0.0-rc.10",
+    "dayjs": "^1.10.6",
+    "https-proxy-agent": "^5.0.0",
+    "microbundle": "^0.13.3",
+    "minimist": "^1.2.5",
+    "mysql2": "^2.3.0",
+    "node-fetch": "^2.6.1",
+    "whatwg-url": "^9.1.0"
+  }
+}
