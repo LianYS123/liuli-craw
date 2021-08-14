@@ -7,6 +7,7 @@
   "exports": "./dist/cral-liuli.modern.js",
   "scripts": {
     "start": "node ./src/index.js",
+    "test": "node ./src/test",
     "build": "microbundle src/index.js"
   },
   "repository": {

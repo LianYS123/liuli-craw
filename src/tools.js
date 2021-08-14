@@ -1,9 +1,11 @@
 const fs = require("fs");
 const PoolProxy = require("./fetchUtils/PoolProxy");
 const createProxyFetch = require("./fetchUtils/createProxyFetch");
+const moment = require("dayjs");
 const chalk = require("chalk");
+const path = require("path");
 
-const { CRAW_ERROR_LOG_PATH } = require("./config");
+const { CRAW_LOG_PATH } = require("./config");
 const config = require("./config");
 const { load } = require("cheerio");
 function getUids(content) {
@@ -22,13 +24,45 @@ function getUids(content) {
   return uids;
 }
 
-const notice = (msg) => {
-  const errorMsg = msg?.message || msg?.err?.message || msg;
-  console.log(chalk.red(errorMsg));
+const DATE_TIME_FORMAT = "YYYY-MM-DD hh:mm:ss";
+const formatTime = (t) => moment(t).format(DATE_TIME_FORMAT);
+
+const pathname = formatTime(Date.now());
+fs.mkdirSync(path.join(CRAW_LOG_PATH, pathname));
+
+const appendData = (data, filename) => {
   fs.appendFileSync(
-    CRAW_ERROR_LOG_PATH,
-    (typeof msg === "string" ? msg : JSON.stringify(msg, null, 2)) + "\n"
+    path.join(CRAW_LOG_PATH, pathname, filename),
+    (typeof data === "string" ? data : JSON.stringify(data, null, 2)) + "\n"
   );
+};
+
+const logError = (error, data) => {
+  console.log(chalk.red(error.message));
+  if (data) {
+    appendData(data, "error");
+  }
+  appendData(error, "error");
+  appendData("-".repeat(100), "error");
+};
+
+const logWarn = (msg, data) => {
+  console.log(chalk.yellow(msg));
+  if (data) {
+    appendData(data, "warn");
+  }
+  appendData(msg, "warn");
+  appendData("-".repeat(100), "warn");
+};
+
+const logInfo = (info) => {
+  console.log(chalk.blue(info));
+  appendData(info, "info");
+};
+
+const logStat = (total) => {
+  console.log(chalk.greenBright(total));
+  appendData(total, "total");
 };
 
 //抓取从start到end页的数据
@@ -48,9 +82,13 @@ const get$ = async (link) => {
 };
 
 module.exports = {
-  notice,
   getUids,
   xFetch,
   get$,
   createLinks,
+  logError,
+  logInfo,
+  logWarn,
+  logStat,
+  formatTime,
 };

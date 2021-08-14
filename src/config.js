@@ -4,19 +4,21 @@ const minimist = require("minimist");
 const args = minimist(process.argv);
 // console.log(args);
 const {
-  base_link = "https://www.liuli.cat/wp/anime.html/page",
+  base_link = "https://www.hacg.cat/wp/page",
   proxy = "http://localhost:8001",
-  pool_limit = 20,
+  pool_limit = 50,
   db_name = "db_lian",
   db_host = "localhost",
   db_pass = "tb1766318380",
   db_user = "root",
   start_page = 1,
   end_page,
+  skip_ads = true,
+  skip_empty_uids = false,
 } = args;
 
 module.exports = {
-  CRAW_ERROR_LOG_PATH: path.join(__dirname, "craw_error_log"),
+  CRAW_LOG_PATH: path.join(__dirname, "../log"),
   BASE_LINK: base_link,
   PROXY: proxy, // 代理
   POOL_LIMIT: pool_limit, // 同时请求数限制
@@ -26,4 +28,6 @@ module.exports = {
   DB_USER: db_user,
   START_PAGE: start_page, // 开始页， 默认1
   END_PAGE: end_page, // 结束页, 默认最后一页
+  SKIP_ADS: skip_ads,
+  SKIP_EMPTY_UIDS: skip_empty_uids,
 };
