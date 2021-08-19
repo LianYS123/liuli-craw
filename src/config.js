@@ -1,3 +1,4 @@
+const fs = require("fs");
 const path = require("path");
 const minimist = require("minimist");
 
@@ -17,7 +18,7 @@ const {
   skip_empty_uids = false,
 } = args;
 
-module.exports = {
+const config = {
   CRAW_LOG_PATH: path.join(__dirname, "../log"),
   BASE_LINK: base_link,
   PROXY: proxy, // 代理
@@ -31,3 +32,10 @@ module.exports = {
   SKIP_ADS: skip_ads,
   SKIP_EMPTY_UIDS: skip_empty_uids,
 };
+
+// 创建日志文件
+if (!fs.existsSync(config.CRAW_LOG_PATH)) {
+  fs.mkdirSync(config.CRAW_LOG_PATH);
+}
+
+module.exports = config;

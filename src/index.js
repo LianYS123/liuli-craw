@@ -20,6 +20,10 @@ const log = console.log;
 let insertCount = 0;
 let updateCount = 0;
 
+process.on("unhandledRejection", (reason) => {
+  logError(reason);
+});
+
 const insertData = async (data) => {
   const { raw_id } = data;
   const [rows] = await pool.query(
@@ -134,7 +138,7 @@ const getEndPage = async () => {
   if (config.END_PAGE) {
     return config.END_PAGE;
   } else {
-    const firstPage = config.BASE_LINK + '/1';
+    const firstPage = config.BASE_LINK + "/1";
     const $ = await get$(firstPage);
     const num = $("#wp_page_numbers .first_last_page > a").text();
     console.log(num);
@@ -166,10 +170,9 @@ const start = async () => {
     logStat(`insert ${insertCount} items`);
     logStat(`update ${updateCount} items`);
     logStat(`total ${insertCount + updateCount}`);
+    pool.end();
   } catch (error) {
     logError(error);
-  } finally {
-    pool.end();
   }
 };
 
