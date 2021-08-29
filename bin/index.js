@@ -6,14 +6,15 @@ const {
   logWarn,
   logStat,
   formatTime,
-} = require("./tools");
+  withErrorHandler
+} = require("../utils");
 const mysql = require("mysql2/promise");
-const pool = require("./db");
+const pool = require("../utils/db");
 const moment = require("dayjs");
-const config = require("./config");
+const config = require("../config");
 const chalk = require("chalk");
 const { parseURL } = require("whatwg-url");
-const { SKIP_ADS, SKIP_EMPTY_UIDS } = require("./config");
+const { SKIP_ADS, SKIP_EMPTY_UIDS } = require("../config");
 
 const log = console.log;
 
@@ -32,7 +33,7 @@ const insertData = async (data) => {
   );
   if (!raw_id) {
     const error = new Error("no raw_id");
-    logError(error, data);
+    throw error;
   }
   if (rows[0].c === 0) {
     const sql = `insert into article set ?`;
@@ -49,10 +50,10 @@ const insertData = async (data) => {
   }
 };
 
-const parseDetail = async (listItem) => {
-  const { data: listData, uri } = listItem;
+const parseDetail = async (uri, listData = {}) => {
   const $ = await get$(uri);
   log(chalk.cyanBright(uri));
+  const raw_id = parseURL(uri).path.pop().replace(".html", "");
   let title = $(".entry-title").text();
   let rating_count = $(".post-ratings strong")
     .eq(0)
@@ -78,6 +79,7 @@ const parseDetail = async (listItem) => {
     rating_score: parseFloat(rating_score) || 0,
     uid: uids.join("|"),
     imgs: imgs.join("|"),
+    raw_id,
     ...listData,
   };
   if (SKIP_EMPTY_UIDS && uids.length === 0) {
@@ -85,12 +87,9 @@ const parseDetail = async (listItem) => {
     logWarn("skip data miss uids", data);
     return;
   }
-  try {
-    await insertData(data);
-  } catch (err) {
-    logError(err);
-  }
+  await insertData(data);
 };
+
 const parseList = async (link) => {
   const $ = await get$(link);
   log(chalk.cyan(link));
@@ -109,9 +108,7 @@ const parseList = async (link) => {
         let tag = $(this).text();
         tags.push(tag);
       });
-    const raw_id = parseURL(href).path.pop().replace(".html", "");
     let data = {
-      raw_id,
       time,
       href,
       img_src,
@@ -146,23 +143,38 @@ const getEndPage = async () => {
   }
 };
 
+
+const crawPages = async () => {
+  const endPage = await getEndPage();
+  const startPage = config.START_PAGE;
+  const links = createLinks(startPage, endPage);
+  console.log(chalk.cyan(`start fetching from ${startPage} to ${endPage}`));
+  const listPros = links.map(withErrorHandler(parseList));
+  const detailProps = [];
+  // 发送全部请求，任何一个请求成功马上处理
+  for await (const hrefs of listPros) {
+    // 解析列表数据, 并加入promises列表中
+    detailProps.push(
+      ...hrefs.map((it) => withErrorHandler(parseDetail)(it.uri, it.data))
+    );
+  }
+  await Promise.allSettled(listPros);
+  // 监控列表请求全部完成
+  return Promise.allSettled(detailProps);
+};
+
 const start = async () => {
   try {
     const startTime = Date.now();
-    const endPage = await getEndPage();
-    const startPage = config.START_PAGE;
-    const links = createLinks(startPage, endPage);
-    console.log(chalk.cyan(`start fetching from ${startPage} to ${endPage}`));
-
-    const promises = [];
-
-    // 发送全部请求，任何一个请求成功马上处理
-    for await (const hrefs of links.map(parseList)) {
-      // 解析列表数据, 并加入promises列表中
-      promises.push(...hrefs.map(parseDetail));
+    //
+    if (config.LINK) {
+      await parseList(config.LINK);
+    } else if (config.DETAIL_LINK) {
+      await parseDetail(config.DETAIL_LINK);
+    } else {
+      await crawPages();
     }
-    // 监控列表请求全部完成
-    await Promise.allSettled(promises);
+    pool.end();
     const endTime = Date.now();
     const cost = Math.ceil((endTime - startTime) / 1000); // s
     logStat(`${formatTime(startTime)} - ${formatTime(endTime)}`);
@@ -170,7 +182,6 @@ const start = async () => {
     logStat(`insert ${insertCount} items`);
     logStat(`update ${updateCount} items`);
     logStat(`total ${insertCount + updateCount}`);
-    pool.end();
   } catch (error) {
     logError(error);
   }

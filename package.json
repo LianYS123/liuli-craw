@@ -10,6 +10,9 @@
     "test": "node ./src/test",
     "build": "microbundle src/index.js"
   },
+  "bin": {
+    "craw": "./bin/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LianYS123/liuli-craw.git"

@@ -16,6 +16,8 @@ const {
   end_page,
   skip_ads = true,
   skip_empty_uids = false,
+  l,  // 指定页面
+  d,  // 指定详情页
 } = args;
 
 const config = {
@@ -31,7 +33,10 @@ const config = {
   END_PAGE: end_page, // 结束页, 默认最后一页
   SKIP_ADS: skip_ads,
   SKIP_EMPTY_UIDS: skip_empty_uids,
+  LINK: l,
+  DETAIL_LINK: d
 };
+
 
 // 创建日志文件
 if (!fs.existsSync(config.CRAW_LOG_PATH)) {

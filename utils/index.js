@@ -5,8 +5,8 @@ const moment = require("dayjs");
 const chalk = require("chalk");
 const path = require("path");
 
-const { CRAW_LOG_PATH } = require("./config");
-const config = require("./config");
+const { CRAW_LOG_PATH } = require("../config");
+const config = require("../config");
 const { load } = require("cheerio");
 function getUids(content) {
   if (!content) return [];
@@ -81,6 +81,16 @@ const get$ = async (link) => {
   return load(text);
 };
 
+const withErrorHandler = (func) => {
+  return (...args) => {
+    try {
+      return func(...args);
+    } catch (error) {
+      logError(error);
+    }
+  };
+};
+
 module.exports = {
   getUids,
   xFetch,
@@ -91,4 +101,5 @@ module.exports = {
   logWarn,
   logStat,
   formatTime,
+  withErrorHandler
 };
